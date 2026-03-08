@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 
 vi.mock('recharts', () => ({
-  PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
+  PieChart: ({ children }: { children?: ReactNode }) => <div data-testid="pie-chart">{children}</div>,
   Pie: () => <div data-testid="pie" />,
   Cell: () => <div data-testid="cell" />,
-  ResponsiveContainer: ({ children }: any) => (
+  ResponsiveContainer: ({ children }: { children?: ReactNode }) => (
     <div data-testid="responsive-container">{children}</div>
   ),
   Legend: () => <div data-testid="legend" />,

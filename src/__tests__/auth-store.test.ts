@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { User } from '@/types';
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -57,7 +58,7 @@ describe('useAuthStore', () => {
   it('logout clears user, token, and auth state', () => {
     // First set some state
     useAuthStore.setState({
-      user: { id: '1', name: 'Test', email: 'test@test.com', role: 'admin' } as any,
+      user: { id: '1', name: 'Test', email: 'test@test.com', role: 'admin', createdAt: '', updatedAt: '' },
       token: 'some-token',
       isAuthenticated: true,
     });
@@ -107,7 +108,7 @@ describe('useAuthStore', () => {
   });
 
   it('setUser updates user and isAuthenticated', () => {
-    const user = { id: '3', name: 'Direct', email: 'direct@test.com', role: 'coordinator' } as any;
+    const user: User = { id: '3', name: 'Direct', email: 'direct@test.com', role: 'coordinator', createdAt: '', updatedAt: '' };
     useAuthStore.getState().setUser(user);
 
     expect(useAuthStore.getState().user).toEqual(user);
@@ -115,7 +116,7 @@ describe('useAuthStore', () => {
   });
 
   it('setUser with null sets isAuthenticated to false', () => {
-    useAuthStore.setState({ user: { id: '1' } as any, isAuthenticated: true });
+    useAuthStore.setState({ user: { id: '1', name: '', email: '', role: 'admin', createdAt: '', updatedAt: '' }, isAuthenticated: true });
     useAuthStore.getState().setUser(null);
 
     expect(useAuthStore.getState().user).toBeNull();
@@ -144,7 +145,7 @@ describe('useAuthStore', () => {
     const partialize = useAuthStore.persist.getOptions().partialize;
     if (partialize) {
       const fullState = {
-        user: { id: '1' } as any,
+        user: { id: '1', name: '', email: '', role: 'admin', createdAt: '', updatedAt: '' },
         token: 'tok',
         isAuthenticated: true,
         isLoading: true,
@@ -158,12 +159,12 @@ describe('useAuthStore', () => {
       };
       const persisted = partialize(fullState);
       expect(persisted).toEqual({
-        user: { id: '1' },
+        user: { id: '1', name: '', email: '', role: 'admin', createdAt: '', updatedAt: '' },
         token: 'tok',
         isAuthenticated: true,
       });
       // isLoading should NOT be persisted
-      expect((persisted as any).isLoading).toBeUndefined();
+      expect((persisted as Record<string, unknown>).isLoading).toBeUndefined();
     }
   });
 });

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { DonutChart } from '@/components/dashboard/donut-chart';
@@ -20,27 +19,16 @@ global.ResizeObserver = ResizeObserverMock;
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', async () => {
   const actual = await vi.importActual<typeof import('framer-motion')>('framer-motion');
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'variants', 'transition', 'whileHover', 'whileTap', 'whileFocus', 'whileInView', 'layout', 'layoutId', 'onHoverStart', 'onHoverEnd']);
   return {
     ...actual,
     motion: new Proxy(actual.motion, {
       get: (_target, prop: string) => {
         const Component = (props: Record<string, unknown>) => {
-          const {
-            initial: _initial,
-            animate: _animate,
-            exit: _exit,
-            transition: _transition,
-            whileHover: _whileHover,
-            whileTap: _whileTap,
-            whileFocus: _whileFocus,
-            whileInView: _whileInView,
-            layout: _layout,
-            layoutId: _layoutId,
-            variants: _variants,
-            onHoverStart: _onHoverStart,
-            onHoverEnd: _onHoverEnd,
-            ...rest
-          } = props;
+          const rest: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(props)) {
+            if (!MOTION_PROPS.has(key)) rest[key] = value;
+          }
           return React.createElement(prop, rest);
         };
         Component.displayName = `motion.${prop}`;
@@ -97,19 +85,6 @@ const server = setupServer(
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
 afterAll(() => server.close());
 beforeEach(() => server.resetHandlers());
-
-function createQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, gcTime: 0 },
-    },
-  });
-}
-
-function Wrapper({ children }: { children: React.ReactNode }) {
-  const queryClient = createQueryClient();
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-}
 
 describe('Dashboard Charts', () => {
   describe('DonutChart', () => {

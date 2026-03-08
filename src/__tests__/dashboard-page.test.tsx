@@ -8,42 +8,43 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('next/link', () => ({
-  default: ({ children, href, ...props }: any) => (
-    <a href={href} {...props}>{children}</a>
-  ),
+  default: (props: Record<string, unknown>) => {
+    const { children, href, ...rest } = props;
+    return React.createElement('a', { ...rest, href }, children);
+  },
 }));
 
-vi.mock('framer-motion', () => ({
-  motion: new Proxy(
-    {},
-    {
-      get: (_target, tag) => {
-        return ({ children, ...props }: any) => {
-          const {
-            initial, animate, exit, variants, transition,
-            whileHover, whileTap, layoutId, layout,
-            onHoverStart, onHoverEnd, whileInView,
-            ...domProps
-          } = props;
-          const Tag = typeof tag === 'string' ? tag : 'div';
-          return <Tag {...domProps}>{children}</Tag>;
-        };
-      },
-    }
-  ),
-  AnimatePresence: ({ children }: any) => children,
-}));
+vi.mock('framer-motion', () => {
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'variants', 'transition', 'whileHover', 'whileTap', 'layoutId', 'layout', 'onHoverStart', 'onHoverEnd', 'whileInView']);
+  return {
+    motion: new Proxy(
+      {},
+      {
+        get: (_target, tag) => {
+          return (props: Record<string, unknown>) => {
+            const domProps: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(props)) {
+              if (key !== 'children' && !MOTION_PROPS.has(key)) domProps[key] = value;
+            }
+            return React.createElement(typeof tag === 'string' ? tag : 'div', domProps, props.children);
+          };
+        },
+      }
+    ),
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
+  };
+});
 
 // Mock dashboard sub-components to isolate
 vi.mock('@/components/dashboard', () => ({
   MiniCalendar: () => <div data-testid="mini-calendar">Calendar</div>,
   TodayEvents: () => <div data-testid="today-events">Today Events</div>,
-  DonutChart: ({ title }: any) => <div data-testid="donut-chart">{title}</div>,
-  BarChartComponent: ({ title }: any) => <div data-testid="bar-chart">{title}</div>,
+  DonutChart: ({ title }: { title?: string }) => <div data-testid="donut-chart">{title}</div>,
+  BarChartComponent: ({ title }: { title?: string }) => <div data-testid="bar-chart">{title}</div>,
 }));
 
 vi.mock('@/components/events', () => ({
-  EventCard: ({ event }: any) => <div data-testid="event-card">{event.title}</div>,
+  EventCard: ({ event }: { event: { title: string } }) => <div data-testid="event-card">{event.title}</div>,
 }));
 
 vi.mock('@/components/glass', () => ({
@@ -55,7 +56,7 @@ vi.mock('@/components/glass', () => ({
 // Track useQuery calls
 const mockUseQuery = vi.fn();
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: (opts: any) => mockUseQuery(opts),
+  useQuery: (opts: unknown) => mockUseQuery(opts),
 }));
 
 import DashboardPage from '@/app/(dashboard)/home/page';
@@ -75,7 +76,7 @@ describe('DashboardPage', () => {
   });
 
   it('shows stat cards when data loads', () => {
-    mockUseQuery.mockImplementation((opts: any) => {
+    mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
       if (opts.queryKey[0] === 'dashboard-stats') {
         return {
           data: { totalEvents: 10, activeVolunteers: 20, completedEvents: 5, upcomingEvents: 3 },
@@ -121,7 +122,7 @@ describe('DashboardPage', () => {
   });
 
   it('shows no upcoming events message when empty', () => {
-    mockUseQuery.mockImplementation((opts: any) => {
+    mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
       if (opts.queryKey[0] === 'events') {
         return { data: { data: [] }, isLoading: false };
       }

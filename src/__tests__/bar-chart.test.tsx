@@ -1,14 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 
 vi.mock('recharts', () => ({
-  BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children }: { children?: ReactNode }) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => <div data-testid="bar" />,
   XAxis: () => <div data-testid="xaxis" />,
   YAxis: () => <div data-testid="yaxis" />,
   CartesianGrid: () => <div data-testid="grid" />,
   Tooltip: () => <div data-testid="tooltip" />,
-  ResponsiveContainer: ({ children }: any) => (
+  ResponsiveContainer: ({ children }: { children?: ReactNode }) => (
     <div data-testid="responsive-container">{children}</div>
   ),
   Cell: () => <div data-testid="cell" />,

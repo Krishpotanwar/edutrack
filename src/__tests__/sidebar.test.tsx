@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import React from 'react';
 
-// Mock dependencies before importing the component
 const mockPathname = vi.fn(() => '/home');
 vi.mock('next/navigation', () => ({
   usePathname: () => mockPathname(),
@@ -19,31 +19,32 @@ vi.mock('@/stores/auth-store', () => ({
   useAuthStore: () => ({ user: mockUser(), logout: mockLogout }),
 }));
 
-vi.mock('framer-motion', () => ({
-  motion: new Proxy(
-    {},
-    {
-      get: (_target, tag) => {
-        return ({ children, ...props }: any) => {
-          // Filter out framer-motion specific props
-          const {
-            initial, animate, exit, variants, transition,
-            whileHover, whileTap, layoutId, layout, onHoverStart, onHoverEnd,
-            ...domProps
-          } = props;
-          const Tag = typeof tag === 'string' ? tag : 'div';
-          return <Tag {...domProps}>{children}</Tag>;
-        };
-      },
-    }
-  ),
-  AnimatePresence: ({ children }: any) => children,
-}));
+vi.mock('framer-motion', () => {
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'variants', 'transition', 'whileHover', 'whileTap', 'layoutId', 'layout', 'onHoverStart', 'onHoverEnd']);
+  return {
+    motion: new Proxy(
+      {},
+      {
+        get: (_target, tag) => {
+          return (props: Record<string, unknown>) => {
+            const domProps: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(props)) {
+              if (key !== 'children' && !MOTION_PROPS.has(key)) domProps[key] = value;
+            }
+            return React.createElement(typeof tag === 'string' ? tag : 'div', domProps, props.children);
+          };
+        },
+      }
+    ),
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
+  };
+});
 
 vi.mock('next/link', () => ({
-  default: ({ children, href, ...props }: any) => (
-    <a href={href} {...props}>{children}</a>
-  ),
+  default: (props: Record<string, unknown>) => {
+    const { children, href, ...rest } = props;
+    return React.createElement('a', { ...rest, href }, children);
+  },
 }));
 
 import { Sidebar } from '@/components/navigation/sidebar';

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import React from 'react';
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -27,27 +28,27 @@ vi.mock('sonner', () => ({
   },
 }));
 
-vi.mock('framer-motion', () => ({
-  motion: new Proxy(
-    {},
-    {
-      get: (_target, tag) => {
-        return ({ children, ...props }: any) => {
-          const {
-            initial, animate, exit, variants, transition,
-            whileHover, whileTap, layoutId, layout,
-            onHoverStart, onHoverEnd, whileInView,
-            ...domProps
-          } = props;
-          const Tag = typeof tag === 'string' ? tag : 'div';
-          return <Tag {...domProps}>{children}</Tag>;
-        };
-      },
-    }
-  ),
-  AnimatePresence: ({ children }: any) => children,
-  useAnimation: () => ({ start: vi.fn(), stop: vi.fn() }),
-}));
+vi.mock('framer-motion', () => {
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'variants', 'transition', 'whileHover', 'whileTap', 'layoutId', 'layout', 'onHoverStart', 'onHoverEnd', 'whileInView']);
+  return {
+    motion: new Proxy(
+      {},
+      {
+        get: (_target, tag) => {
+          return (props: Record<string, unknown>) => {
+            const domProps: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(props)) {
+              if (key !== 'children' && !MOTION_PROPS.has(key)) domProps[key] = value;
+            }
+            return React.createElement(typeof tag === 'string' ? tag : 'div', domProps, props.children);
+          };
+        },
+      }
+    ),
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
+    useAnimation: () => ({ start: vi.fn(), stop: vi.fn() }),
+  };
+});
 
 vi.mock('@/components/effects/floating-letters', () => ({
   FloatingLetters: () => <div data-testid="floating-letters" />,

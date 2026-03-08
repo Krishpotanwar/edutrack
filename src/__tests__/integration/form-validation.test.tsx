@@ -32,27 +32,16 @@ vi.mock('sonner', () => ({
 // Mock framer-motion
 vi.mock('framer-motion', async () => {
   const actual = await vi.importActual<typeof import('framer-motion')>('framer-motion');
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'variants', 'transition', 'whileHover', 'whileTap', 'whileFocus', 'whileInView', 'layout', 'layoutId', 'onHoverStart', 'onHoverEnd']);
   return {
     ...actual,
     motion: new Proxy(actual.motion, {
       get: (_target, prop: string) => {
         const Component = (props: Record<string, unknown>) => {
-          const {
-            initial: _initial,
-            animate: _animate,
-            exit: _exit,
-            transition: _transition,
-            whileHover: _whileHover,
-            whileTap: _whileTap,
-            whileFocus: _whileFocus,
-            whileInView: _whileInView,
-            layout: _layout,
-            layoutId: _layoutId,
-            variants: _variants,
-            onHoverStart: _onHoverStart,
-            onHoverEnd: _onHoverEnd,
-            ...rest
-          } = props;
+          const rest: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(props)) {
+            if (!MOTION_PROPS.has(key)) rest[key] = value;
+          }
           return React.createElement(prop, rest);
         };
         Component.displayName = `motion.${prop}`;
