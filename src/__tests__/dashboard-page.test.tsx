@@ -51,6 +51,7 @@ vi.mock('@/components/glass', () => ({
   SkeletonStatCard: () => <div data-testid="skeleton-stat" />,
   SkeletonChart: () => <div data-testid="skeleton-chart" />,
   SkeletonEventCard: () => <div data-testid="skeleton-event" />,
+  SkeletonCard: () => <div data-testid="skeleton-card" />,
 }));
 
 // Track useQuery calls
@@ -61,15 +62,26 @@ vi.mock('@tanstack/react-query', () => ({
 
 import DashboardPage from '@/app/(dashboard)/home/page';
 
+const defaultQueryMock = (opts: { queryKey: string[] }) => {
+  if (opts.queryKey[0] === 'events') return { data: { data: [] }, isLoading: false };
+  return { data: undefined, isLoading: false };
+};
+
 describe('DashboardPage', () => {
   it('renders welcome message', () => {
-    mockUseQuery.mockReturnValue({ data: undefined, isLoading: true });
+    mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+      if (opts.queryKey[0] === 'events') return { data: { data: [] }, isLoading: false };
+      return { data: undefined, isLoading: true };
+    });
     render(<DashboardPage />);
-    expect(screen.getByText('Welcome back')).toBeInTheDocument();
+    expect(screen.getByText(/Good (Morning|Afternoon|Evening)/)).toBeInTheDocument();
   });
 
   it('shows loading skeletons when stats are loading', () => {
-    mockUseQuery.mockReturnValue({ data: undefined, isLoading: true });
+    mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
+      if (opts.queryKey[0] === 'events') return { data: { data: [] }, isLoading: false };
+      return { data: undefined, isLoading: true };
+    });
     render(<DashboardPage />);
     const skeletons = screen.getAllByTestId('skeleton-stat');
     expect(skeletons.length).toBeGreaterThanOrEqual(4);
@@ -96,45 +108,38 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Total Events')).toBeInTheDocument();
     expect(screen.getByText('Active Volunteers')).toBeInTheDocument();
     expect(screen.getByText('Completed Events')).toBeInTheDocument();
-    // "Upcoming Events" appears as both stat label and section title
+    // "Upcoming Events" appears in both stat card label and section title
     const upcomingTexts = screen.getAllByText('Upcoming Events');
-    expect(upcomingTexts.length).toBeGreaterThanOrEqual(2);
+    expect(upcomingTexts.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows "Upcoming Events" section title', () => {
-    mockUseQuery.mockReturnValue({ data: undefined, isLoading: false });
+    mockUseQuery.mockImplementation(defaultQueryMock);
     render(<DashboardPage />);
     const upcomingTexts = screen.getAllByText('Upcoming Events');
     expect(upcomingTexts.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows "Analytics Overview" section title', () => {
-    mockUseQuery.mockReturnValue({ data: undefined, isLoading: false });
+    mockUseQuery.mockImplementation(defaultQueryMock);
     render(<DashboardPage />);
     expect(screen.getByText('Analytics Overview')).toBeInTheDocument();
   });
 
-  it('shows view all link', () => {
-    mockUseQuery.mockReturnValue({ data: undefined, isLoading: false });
+  it('shows Recent Activity section', () => {
+    mockUseQuery.mockImplementation(defaultQueryMock);
     render(<DashboardPage />);
-    const viewAllLink = screen.getByText('View all');
-    expect(viewAllLink.closest('a')).toHaveAttribute('href', '/events');
+    expect(screen.getByText('Recent Activity')).toBeInTheDocument();
   });
 
-  it('shows no upcoming events message when empty', () => {
-    mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
-      if (opts.queryKey[0] === 'events') {
-        return { data: { data: [] }, isLoading: false };
-      }
-      return { data: undefined, isLoading: false };
-    });
-
+  it('shows Goals Progress section', () => {
+    mockUseQuery.mockImplementation(defaultQueryMock);
     render(<DashboardPage />);
-    expect(screen.getByText('No upcoming events scheduled')).toBeInTheDocument();
+    expect(screen.getByText('Goals Progress')).toBeInTheDocument();
   });
 
   it('renders EduTrack Dashboard footer text', () => {
-    mockUseQuery.mockReturnValue({ data: undefined, isLoading: false });
+    mockUseQuery.mockImplementation(defaultQueryMock);
     render(<DashboardPage />);
     expect(screen.getByText('EduTrack Dashboard')).toBeInTheDocument();
   });

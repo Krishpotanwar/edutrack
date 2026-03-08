@@ -65,6 +65,7 @@ function useNotificationPrefs() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(NOTIFICATION_PREFS_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync initial value from localStorage
       if (stored) setPrefs(JSON.parse(stored));
     } catch {
       // use defaults
@@ -94,11 +95,15 @@ export default function ProfilePage() {
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['current-user'],
     queryFn: fetchCurrentUser,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ['events'],
     queryFn: fetchEvents,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const profileMutation = useMutation({
@@ -119,7 +124,7 @@ export default function ProfilePage() {
   const userEvents = events.filter((e) => e.attendees.includes(user?.id || ''));
 
   const roleColors: Record<string, string> = {
-    admin: 'bg-teal-500/10 text-teal-700 dark:text-teal-400',
+    admin: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
     coordinator: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
     volunteer: 'bg-green-500/10 text-green-700 dark:text-green-400',
   };
@@ -316,12 +321,12 @@ export default function ProfilePage() {
         </GlassCard>
         <GlassCard className="text-center">
           <ImageIcon className="h-8 w-8 mx-auto text-primary mb-2" />
-          <p className="text-2xl font-bold">12</p>
+          <p className="text-2xl font-bold">{events.reduce((total, e) => total + (e.photos?.length || 0), 0)}</p>
           <p className="text-sm text-muted-foreground">Photos Uploaded</p>
         </GlassCard>
         <GlassCard className="text-center">
           <CalendarDays className="h-8 w-8 mx-auto text-primary mb-2" />
-          <p className="text-2xl font-bold">24</p>
+          <p className="text-2xl font-bold">{events.filter((e) => e.status === 'completed' && e.attendees.includes(user.id)).length * 4}</p>
           <p className="text-sm text-muted-foreground">Hours Volunteered</p>
         </GlassCard>
       </div>

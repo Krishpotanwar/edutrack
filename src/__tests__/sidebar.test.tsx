@@ -114,7 +114,7 @@ describe('Sidebar', () => {
   it('theme toggle button works in light mode', () => {
     mockTheme.mockReturnValue('light');
     render(<Sidebar />);
-    const themeBtn = screen.getByLabelText(/Light mode/i);
+    const themeBtn = screen.getByLabelText(/Switch to dark mode/i);
     fireEvent.click(themeBtn);
     expect(mockSetTheme).toHaveBeenCalledWith('dark');
   });
@@ -122,9 +122,9 @@ describe('Sidebar', () => {
   it('theme toggle button works in dark mode', () => {
     mockTheme.mockReturnValue('dark');
     render(<Sidebar />);
-    const themeBtn = screen.getByLabelText(/Dark mode/i);
+    const themeBtn = screen.getByLabelText(/Switch to light mode/i);
     fireEvent.click(themeBtn);
-    expect(mockSetTheme).toHaveBeenCalledWith('system');
+    expect(mockSetTheme).toHaveBeenCalledWith('light');
   });
 
   it('shows Dark Mode text when theme is light', () => {

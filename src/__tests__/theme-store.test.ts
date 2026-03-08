@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 import { useThemeStore } from '@/stores/theme-store';
 
 describe('useThemeStore', () => {
   beforeEach(() => {
-    useThemeStore.setState({ theme: 'system' });
+    useThemeStore.setState({ theme: null });
   });
 
-  it('has system as default theme', () => {
+  it('has null as default theme (follows system)', () => {
     const { theme } = useThemeStore.getState();
-    expect(theme).toBe('system');
+    expect(theme).toBeNull();
   });
 
   it('setTheme changes theme to dark', () => {
@@ -22,15 +22,14 @@ describe('useThemeStore', () => {
     expect(useThemeStore.getState().theme).toBe('light');
   });
 
-  it('setTheme changes theme back to system', () => {
+  it('setTheme toggles between light and dark', () => {
     useThemeStore.getState().setTheme('dark');
-    useThemeStore.getState().setTheme('system');
-    expect(useThemeStore.getState().theme).toBe('system');
+    expect(useThemeStore.getState().theme).toBe('dark');
+    useThemeStore.getState().setTheme('light');
+    expect(useThemeStore.getState().theme).toBe('light');
   });
 
   it('persists theme key name as edutrack-theme', () => {
-    // The store uses persist middleware with name 'edutrack-theme'
-    // We verify the store has persist configuration
     expect(useThemeStore.persist).toBeDefined();
     expect(useThemeStore.persist.getOptions().name).toBe('edutrack-theme');
   });

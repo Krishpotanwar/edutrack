@@ -52,7 +52,7 @@ const renderActiveShape = (props: ActiveShapeProps) => {
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
-        stroke="rgba(255,255,255,0.3)"
+        stroke="var(--border)"
         strokeWidth={2}
       />
       <text x={cx} y={cy - 8} textAnchor="middle" fill="var(--foreground)" fontSize={16} fontWeight={700}>
@@ -80,9 +80,9 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: DonutT
 
   return (
     <div
-      className="relative overflow-hidden rounded-xl px-4 py-3 shadow-2xl border border-white/20 dark:border-white/10"
+      className="relative overflow-hidden rounded-xl px-4 py-3 shadow-2xl border border-border"
       style={{
-        background: 'rgba(255, 255, 255, 0.85)',
+        background: 'var(--glass-bg-strong)',
         backdropFilter: 'blur(20px) saturate(1.5)',
         WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
       }}
@@ -179,9 +179,9 @@ export function DonutChart({ data, title, className, onClick }: DonutChartProps)
               className="absolute inset-0 flex items-center justify-center z-20"
             >
               <div
-                className="glass-card p-4 rounded-xl relative text-center min-w-[180px] shadow-2xl border border-white/20 dark:border-white/10"
+                className="glass-card p-4 rounded-xl relative text-center min-w-[180px] shadow-2xl border border-border"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.85)',
+                  background: 'var(--glass-bg-strong)',
                   backdropFilter: 'blur(20px) saturate(1.5)',
                   WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
                 }}

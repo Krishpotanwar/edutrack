@@ -72,11 +72,15 @@ export default function UsersPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: fetchUsers,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: eventsData } = useQuery({
     queryKey: ['events'],
     queryFn: fetchEvents,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const updateRoleMutation = useMutation({

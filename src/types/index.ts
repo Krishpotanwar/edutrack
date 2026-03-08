@@ -47,6 +47,7 @@ export interface EventFormData {
   category: EventCategory;
   status: EventStatus;
   tags: string[];
+  photos: string[];
   maxParticipants?: number;
   isPublic: boolean;
 }

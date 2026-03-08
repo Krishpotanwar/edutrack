@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   CalendarDays, 
@@ -10,25 +10,34 @@ import {
   TrendingUp, 
   TrendingDown,
   Sparkles,
-  ArrowRight,
-  Calendar,
-  Plus
+  Plus,
+  Mail,
+  Star,
 } from 'lucide-react';
-import { isToday, parseISO, format } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
 import {
   MiniCalendar,
   TodayEvents,
-  DonutChart,
-  BarChartComponent,
 } from '@/components/dashboard';
 import { EventCard } from '@/components/events';
-import { SkeletonStatCard, SkeletonChart, SkeletonEventCard } from '@/components/glass';
+import { SkeletonStatCard, SkeletonChart, SkeletonCard } from '@/components/glass';
+
+const DonutChart = dynamic(
+  () => import('@/components/dashboard/donut-chart').then(mod => ({ default: mod.DonutChart })),
+  { ssr: false, loading: () => <SkeletonChart /> }
+);
+const BarChartComponent = dynamic(
+  () => import('@/components/dashboard/bar-chart').then(mod => ({ default: mod.BarChartComponent })),
+  { ssr: false, loading: () => <SkeletonChart /> }
+);
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
-import type { Event, DashboardStats } from '@/types';
+import { GenerateReportModal } from '@/components/reports/generate-report-modal';
+import type { DashboardStats, Event } from '@/types';
 
 async function fetchDashboardStats(): Promise<DashboardStats> {
   const response = await fetch('/api/dashboard/stats');
@@ -36,15 +45,15 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
   return response.json();
 }
 
-async function fetchEvents(): Promise<{ data: Event[] }> {
-  const response = await fetch('/api/events');
-  if (!response.ok) throw new Error('Failed to fetch events');
-  return response.json();
-}
-
 async function fetchReportsOverview() {
   const response = await fetch('/api/reports/overview');
   if (!response.ok) throw new Error('Failed to fetch reports');
+  return response.json();
+}
+
+async function fetchEvents(): Promise<{ data: Event[] }> {
+  const response = await fetch('/api/events');
+  if (!response.ok) throw new Error('Failed to fetch events');
   return response.json();
 }
 
@@ -117,7 +126,7 @@ interface EnhancedStatCardProps {
   label: string;
   trend?: { value: number; positive: boolean };
   gradient: string;
-  glowColor: string;
+  glowColor?: string;
   delay?: number;
   href?: string;
   sparklineData?: number[];
@@ -130,7 +139,6 @@ function EnhancedStatCard({
   label, 
   trend, 
   gradient,
-  glowColor,
   delay = 0,
   href,
   sparklineData,
@@ -143,57 +151,27 @@ function EnhancedStatCard({
       initial={{ opacity: 0, y: 30, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
-      whileHover={{ 
-        y: -8, 
-        scale: 1.02,
-        transition: { duration: 0.2 } 
-      }}
       className={cn("group relative", href && "cursor-pointer")}
     >
-      {/* Glow effect on hover */}
-      <div 
-        className={cn(
-          "absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl -z-10",
-          glowColor
-        )}
-      />
-      
-      {/* Glass card */}
-      <div className="relative overflow-hidden rounded-2xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 p-5 sm:p-6 shadow-lg shadow-black/5 dark:shadow-black/20">
-        {/* Gradient border overlay */}
-        <div className={cn(
-          "absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-          "bg-gradient-to-r p-[1px]",
-          gradient
-        )}>
-          <div className="w-full h-full rounded-2xl bg-white/90 dark:bg-gray-900/90" />
-        </div>
-
+      <div className="glass-card !p-5 sm:!p-6 !rounded-2xl transition-transform duration-200 hover:-translate-y-1">
         <div className="relative z-10">
           <div className="flex items-start justify-between">
-            {/* Gradient icon container */}
-            <motion.div 
+            <div 
               className={cn(
                 "p-3 rounded-xl bg-gradient-to-br shadow-lg",
                 gradient
               )}
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
             >
               <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-            </motion.div>
+            </div>
 
-            {/* Trend indicator */}
             {trend && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: delay + 0.3, duration: 0.4 }}
+              <div
                 className={cn(
                   'flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-full',
                   trend.positive
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'bg-rose-500/10 text-rose-400'
                 )}
               >
                 {trend.positive ? (
@@ -202,22 +180,19 @@ function EnhancedStatCard({
                   <TrendingDown className="h-3 w-3" />
                 )}
                 <span>{trend.positive ? '+' : ''}{trend.value}%</span>
-              </motion.div>
+              </div>
             )}
           </div>
 
           <div className="mt-4">
-            <motion.p 
-              className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent"
-            >
+            <p className="text-3xl sm:text-4xl font-bold text-foreground">
               {animatedValue.toLocaleString()}
-            </motion.p>
+            </p>
             <p className="text-sm text-muted-foreground mt-1 font-medium">
               {label}
             </p>
           </div>
 
-          {/* Mini sparkline */}
           {sparklineData && sparklineColor && (
             <MiniSparkline data={sparklineData} color={sparklineColor} />
           )}
@@ -237,15 +212,8 @@ function WaveEmoji() {
   return (
     <motion.span
       className="inline-block text-3xl sm:text-4xl ml-2"
-      animate={{ 
-        rotate: [0, 14, -8, 14, -4, 10, 0],
-        transformOrigin: '70% 70%'
-      }}
-      transition={{ 
-        duration: 2.5, 
-        repeat: Infinity,
-        repeatDelay: 1
-      }}
+      animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
+      transition={{ duration: 2.5, delay: 0.5 }}
     >
       👋
     </motion.span>
@@ -259,10 +227,7 @@ function SectionTitle({ children, className }: { children: React.ReactNode; clas
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
-      className={cn(
-        "text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 via-primary to-gray-600 dark:from-white dark:via-primary dark:to-gray-400 bg-clip-text text-transparent",
-        className
-      )}
+      className={cn("text-xl sm:text-2xl font-bold text-foreground", className)}
     >
       {children}
     </motion.h2>
@@ -283,19 +248,12 @@ function GlassContainer({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay }}
-      whileHover={{ 
-        y: -4,
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-        transition: { duration: 0.2 }
-      }}
+      transition={{ duration: 0.4, delay }}
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20",
+        "glass-card !p-0 !rounded-2xl",
         className
       )}
     >
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
       <div className="relative z-10">
         {children}
       </div>
@@ -303,40 +261,107 @@ function GlassContainer({
   );
 }
 
+// Circular progress for Goals section
+function CircularProgress({ percentage, label, sublabel, color }: {
+  percentage: number;
+  label: string;
+  sublabel: string;
+  color: string;
+}) {
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-24 h-24">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <circle
+            cx="50" cy="50" r={radius}
+            fill="none"
+            stroke="var(--border)"
+            strokeWidth="6"
+          />
+          <motion.circle
+            cx="50" cy="50" r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-lg font-bold text-foreground">{percentage}%</span>
+        </div>
+      </div>
+      <p className="text-xs font-medium text-foreground mt-2 text-center">{label}</p>
+      <p className="text-[10px] text-muted-foreground text-center">{sublabel}</p>
+    </div>
+  );
+}
+
+// Recent activity data
+const recentActivities = [
+  { icon: CalendarDays, color: 'bg-blue-500', name: 'New Event Created', text: 'Community Literacy Drive added by coordinator.', time: '25 min ago' },
+  { icon: Users, color: 'bg-rose-500', name: 'Volunteer Joined', text: '5 new volunteers registered for Science Workshop.', time: '1 hour ago' },
+  { icon: CheckCircle, color: 'bg-emerald-500', name: 'Event Completed', text: 'Rural Education Camp completed successfully.', time: '3 hours ago' },
+  { icon: Mail, color: 'bg-violet-500', name: 'Report Submitted', text: 'Monthly impact report submitted for review.', time: '5 hours ago' },
+  { icon: Star, color: 'bg-amber-500', name: 'Achievement', text: 'Volunteer milestone: 100 hours contributed.', time: '5 hours ago' },
+];
+
+// Goals progress data
+const goalsData = [
+  { percentage: 54, label: 'Monthly Events', sublabel: '8 of 15', color: '#8B5CF6' },
+  { percentage: 68, label: 'Volunteer Retention', sublabel: '340 of 500', color: '#06B6D4' },
+  { percentage: 82, label: 'Program Impact', sublabel: '820k of 1M', color: '#10B981' },
+  { percentage: 46, label: 'Fund Utilization', sublabel: '92 of 200', color: '#F97316' },
+];
+
 export default function DashboardPage() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const { user } = useAuthStore();
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: fetchDashboardStats,
-  });
-
-  const { data: eventsData, isLoading: eventsLoading } = useQuery({
-    queryKey: ['events'],
-    queryFn: fetchEvents,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: reportsData, isLoading: reportsLoading } = useQuery({
     queryKey: ['reports-overview'],
     queryFn: fetchReportsOverview,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  const events = useMemo(() => eventsData?.data || [], [eventsData?.data]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['events'],
+    queryFn: fetchEvents,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const events = eventsData?.data || [];
 
   const todayEvents = useMemo(() => {
-    return events.filter((event) => isToday(parseISO(event.startDate)));
-  }, [events]);
+    return events.filter((e: Event) => {
+      const eventDate = new Date(e.startDate);
+      return eventDate.toDateString() === selectedDate.toDateString();
+    });
+  }, [events, selectedDate]);
 
   const upcomingEvents = useMemo(() => {
     return events
-      .filter((event) => new Date(event.startDate) >= new Date())
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      .filter((e: Event) => e.status === 'planned' && new Date(e.startDate) > new Date())
+      .sort((a: Event, b: Event) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
       .slice(0, 6);
-  }, [events]);
-
-  const eventDates = useMemo(() => {
-    return events.map((event) => parseISO(event.startDate));
   }, [events]);
 
   const currentDate = format(new Date(), 'EEEE, MMMM d, yyyy');
@@ -362,17 +387,18 @@ export default function DashboardPage() {
               <Sparkles className="h-5 w-5 text-primary animate-pulse" />
               <span className="text-sm font-medium text-primary">{currentDate}</span>
             </div>
-            <Link
-              href="/reports"
+            <button
+              type="button"
+              onClick={() => setReportModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] text-white text-sm font-medium shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30 transition-all hover:scale-105"
             >
               <Plus className="h-4 w-4" />
               New Report
-            </Link>
+            </button>
           </div>
           
           <h1 className="text-3xl lg:text-4xl font-bold">
-            <span className="bg-gradient-to-r from-[#EC4899] via-[#8B5CF6] to-[#6366F1] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               {greeting}
             </span>
             {', '}
@@ -385,6 +411,16 @@ export default function DashboardPage() {
           </p>
         </div>
       </motion.div>
+
+      {/* Mini Calendar + Today's Events */}
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+        <MiniCalendar
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          eventDates={events.map((e: Event) => new Date(e.startDate))}
+        />
+        <TodayEvents events={todayEvents} />
+      </div>
 
       {/* Quick Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -448,94 +484,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Section - Events Grid (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Section Header */}
-          <div className="flex items-center justify-between">
-            <SectionTitle>Upcoming Events</SectionTitle>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Link 
-                href="/events"
-                className="group flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-              >
-                View all
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </motion.div>
-          </div>
-
-          {/* Events Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AnimatePresence mode="wait">
-              {eventsLoading ? (
-                <>
-                  <SkeletonEventCard />
-                  <SkeletonEventCard />
-                  <SkeletonEventCard />
-                  <SkeletonEventCard />
-                </>
-              ) : upcomingEvents.length === 0 ? (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="col-span-full"
-                >
-                  <GlassContainer className="p-12 text-center">
-                    <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">No upcoming events scheduled</p>
-                    <Link 
-                      href="/events/new"
-                      className="inline-flex items-center gap-2 mt-4 text-sm font-medium text-primary hover:text-primary/80"
-                    >
-                      Create an event
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </GlassContainer>
-                </motion.div>
-              ) : (
-                upcomingEvents.slice(0, 4).map((event, index) => (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                  >
-                    <EventCard event={event} />
-                  </motion.div>
-                ))
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Right Section - Calendar & Today's Events (1/3) */}
-        <div className="space-y-6">
-          {/* Mini Calendar */}
-          <GlassContainer delay={0.2} className="p-0">
-            <div className="p-1">
-              <MiniCalendar
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-                eventDates={eventDates}
-              />
-            </div>
-          </GlassContainer>
-
-          {/* Today's Events */}
-          <GlassContainer delay={0.3} className="p-0">
-            <div className="p-1">
-              <TodayEvents events={todayEvents} />
-            </div>
-          </GlassContainer>
-        </div>
-      </div>
-
       {/* Charts Section */}
       <div className="space-y-6">
         <SectionTitle>Analytics Overview</SectionTitle>
@@ -552,12 +500,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                whileHover={{ 
-                  y: -4,
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-                  transition: { duration: 0.2 }
-                }}
-                className="relative overflow-hidden rounded-2xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20"
+                className="glass-card !p-0 !rounded-2xl"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-transparent pointer-events-none" />
                 <DonutChart
@@ -571,12 +514,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                whileHover={{ 
-                  y: -4,
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-                  transition: { duration: 0.2 }
-                }}
-                className="relative overflow-hidden rounded-2xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20"
+                className="glass-card !p-0 !rounded-2xl"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent pointer-events-none" />
                 <BarChartComponent
@@ -590,7 +528,72 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Bottom Quick Actions (optional decorative element) */}
+      {/* Bottom Row: Recent Activity + Goals Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <GlassContainer delay={0.6} className="p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h3>
+          <div className="space-y-4">
+            {recentActivities.map((activity, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className={cn("p-2 rounded-lg shrink-0", activity.color)}>
+                  <activity.icon className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground">
+                    <span className="font-semibold">{activity.name}</span>{' '}
+                    <span className="text-muted-foreground">{activity.text}</span>
+                  </p>
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0">{activity.time}</span>
+              </div>
+            ))}
+          </div>
+        </GlassContainer>
+
+        {/* Goals Progress */}
+        <GlassContainer delay={0.7} className="p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-6">Goals Progress</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {goalsData.map((goal) => (
+              <CircularProgress
+                key={goal.label}
+                percentage={goal.percentage}
+                label={goal.label}
+                sublabel={goal.sublabel}
+                color={goal.color}
+              />
+            ))}
+          </div>
+        </GlassContainer>
+      </div>
+
+      {/* Upcoming Events Grid */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <SectionTitle>Upcoming Events</SectionTitle>
+          <Link href="/events" className="text-sm text-primary hover:underline">View all</Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {eventsLoading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : upcomingEvents.length === 0 ? (
+            <div className="col-span-full text-center py-8 text-muted-foreground">
+              No upcoming events
+            </div>
+          ) : (
+            upcomingEvents.map((event: Event) => (
+              <EventCard key={event.id} event={event} />
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Bottom decorative element */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -604,6 +607,8 @@ export default function DashboardPage() {
           <span>Making a difference together</span>
         </div>
       </motion.div>
+
+      <GenerateReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} />
     </div>
   );
 }

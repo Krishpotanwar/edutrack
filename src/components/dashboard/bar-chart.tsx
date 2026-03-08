@@ -23,9 +23,9 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 
   return (
     <div
-      className="relative overflow-hidden rounded-xl px-4 py-3 shadow-2xl border border-white/20 dark:border-white/10"
+      className="relative overflow-hidden rounded-xl px-4 py-3 shadow-2xl border border-border"
       style={{
-        background: 'rgba(255, 255, 255, 0.85)',
+        background: 'var(--glass-bg-strong)',
         backdropFilter: 'blur(20px) saturate(1.5)',
         WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
       }}
@@ -126,9 +126,9 @@ export function BarChartComponent({ data, title, className, onClick }: BarChartC
               className="absolute inset-0 flex items-center justify-center z-20"
             >
               <div
-                className="glass-card p-4 rounded-xl relative text-center min-w-[180px] shadow-2xl border border-white/20 dark:border-white/10"
+                className="glass-card p-4 rounded-xl relative text-center min-w-[180px] shadow-2xl border border-border"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.85)',
+                  background: 'var(--glass-bg-strong)',
                   backdropFilter: 'blur(20px) saturate(1.5)',
                   WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
                 }}

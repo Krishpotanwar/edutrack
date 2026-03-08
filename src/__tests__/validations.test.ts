@@ -131,6 +131,7 @@ describe('eventSchema', () => {
     category: 'workshop' as const,
     status: 'planned' as const,
     tags: ['testing', 'vitest'],
+    photos: [],
     isPublic: true,
   };
 

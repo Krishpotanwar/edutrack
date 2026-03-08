@@ -14,7 +14,6 @@ import {
   LogOut,
   Moon,
   Sun,
-  Monitor,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -44,15 +43,15 @@ function NavItem({ item, isActive, collapsed }: {
         'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all tap-target relative',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         isActive 
-          ? 'text-primary font-semibold bg-primary/[0.08]' 
-          : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+          ? 'text-primary font-semibold bg-primary/10' 
+          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
       )}
       aria-current={isActive ? 'page' : undefined}
     >
       {/* Thin gradient left accent bar */}
       {isActive && (
         <motion.div
-          className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-gradient-to-b from-[#EC4899] to-[#8B5CF6]"
+          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary"
           layoutId="activeNavEdge"
           initial={false}
           transition={{ type: 'spring', stiffness: 500, damping: 35 }}
@@ -91,9 +90,8 @@ export function Sidebar() {
 
   return (
     <motion.div
-      layout
       className={cn(
-        'flex flex-col h-full glass border-r border-border/50 relative z-40',
+        'flex flex-col h-full glass border-r border-border relative z-40',
         collapsed ? 'w-20' : 'w-[260px]'
       )}
       initial={false}
@@ -110,11 +108,11 @@ export function Sidebar() {
       aria-label="Main navigation"
     >
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-border/50">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         <AnimatePresence mode="wait">
           {!collapsed && (
             <motion.span
-              className="text-xl font-bold text-primary"
+              className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
@@ -125,8 +123,8 @@ export function Sidebar() {
           )}
         </AnimatePresence>
         <motion.div
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          animate={{ rotate: collapsed ? 180 : 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         >
           <Button
             variant="ghost"
@@ -137,12 +135,7 @@ export function Sidebar() {
             aria-expanded={!collapsed}
             aria-controls="sidebar-nav"
           >
-            <motion.div
-              animate={{ rotate: collapsed ? 180 : 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </motion.div>
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         </motion.div>
       </div>
@@ -163,49 +156,39 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-border/50 space-y-2">
-        <motion.div whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}>
+      <div className="p-4 border-t border-border space-y-2">
+        <div>
           <Button
             variant="ghost"
             className={cn(
-              'w-full justify-start gap-3 relative overflow-hidden hover:bg-accent/60',
+              'w-full justify-start gap-3 relative overflow-hidden text-muted-foreground hover:text-foreground hover:bg-accent',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               collapsed && 'justify-center px-0'
             )}
             onClick={() => {
-              const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system';
-              setTheme(next);
+              setTheme(theme === 'dark' ? 'light' : 'dark');
             }}
             aria-label={
-              theme === 'system' ? 'Using system theme — click for light mode'
-                : theme === 'light' ? 'Light mode — click for dark mode'
-                : 'Dark mode — click for system theme'
+              theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
             }
           >
-            <motion.div
-              animate={{ rotate: theme === 'dark' ? 0 : theme === 'light' ? 180 : 90 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-5 w-5" aria-hidden="true" />
-              ) : theme === 'light' ? (
-                <Moon className="h-5 w-5" aria-hidden="true" />
-              ) : (
-                <Monitor className="h-5 w-5" aria-hidden="true" />
-              )}
-            </motion.div>
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Moon className="h-5 w-5" aria-hidden="true" />
+            )}
             {!collapsed && (
               <span>
-                {theme === 'dark' ? 'Light Mode' : theme === 'light' ? 'Dark Mode' : 'System Theme'}
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </span>
             )}
           </Button>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}>
+        </div>
+        <div>
           <Button
             variant="ghost"
             className={cn(
-              'w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10',
+              'w-full justify-start gap-3 text-red-400/80 hover:text-red-400 hover:bg-red-500/10',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               collapsed && 'justify-center px-0'
             )}
@@ -215,7 +198,7 @@ export function Sidebar() {
             <LogOut className="h-5 w-5" aria-hidden="true" />
             {!collapsed && <span>Logout</span>}
           </Button>
-        </motion.div>
+        </div>
       </div>
     </motion.div>
   );
